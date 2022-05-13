@@ -1,3 +1,7 @@
 
 *.iml
 *.xml
+*.docx
+*.xlsx
+*.png
+*.tsv
