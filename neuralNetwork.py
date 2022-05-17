@@ -18,7 +18,6 @@ from torchvision import datasets, transforms
 class MLP(nn.Module):
 
     def __init__(self, in_dim, out_dim):
-        """在构造器中定义层次结构"""
         super(MLP, self).__init__()
         self.module = nn.Sequential(
             nn.Linear(in_dim,64),
@@ -32,8 +31,7 @@ class MLP(nn.Module):
         return out
 
 matplotlib.rc('font', family='Microsoft YaHei')
-data = pd.read_csv('hd.tsv', delimiter='\t')
-print(data['61'])
+data = pd.read_csv('hd_95samples.csv')
 
 print(data.columns.values)
 
@@ -47,7 +45,7 @@ for i in range(len(features)):
     x = data[features[i]].values
     y = data['Target'].values
     corr, p = pearsonr(x, y)
-    if abs(corr) >= 0.3:
+    if abs(corr) >= 0:
         corrs.append(corr)
         print(corr, i)
         selected_features.append(features[i])
@@ -55,10 +53,7 @@ for i in range(len(features)):
     else:
         print(corr)
 print(len(selected_features))
-df = pd.read_excel('correlation Matrix.xlsx')
-print(df.columns.values[1:])
-print(selected_features)
-selected_features = list(df.columns.values[1:])
+
 
 for feature in data.columns.values[1:-2]:
     if feature not in selected_features:
@@ -78,6 +73,7 @@ model_best = None
 best_test_r2 = -np.inf
 y_test_list = []
 prediction_test_list  = []
+train_r2_list = []
 for train_index, test_index in kf.split(X):
     # print("TRAIN:", train_index, "TEST:", test_index)
     x_train, x_test = X[train_index], X[test_index]
@@ -93,13 +89,13 @@ for train_index, test_index in kf.split(X):
 
     model = MLP(in_dim=in_dim, out_dim=out_dim).to(device)
     loss_fn = nn.MSELoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
     epochs = 2000
     with tqdm(range(epochs), unit='epoch', total=epochs, desc='Epoch iteration') as epoch:
         for ep in epoch:
             model.train()
-            batch_size = 80
+            batch_size = 94
             step_num = len(x_train) // batch_size
             with tqdm(range(step_num),
                       unit=' samples',
@@ -121,11 +117,15 @@ for train_index, test_index in kf.split(X):
 
     prediction_test = model(x_test)
     prediction_train = model(x_train)
+
+
+    train_r2_list.append(r2_score(y_train.cpu().detach().numpy(),prediction_train.cpu().detach().numpy()))
     y_test_list.append(y_test.cpu().detach().numpy()[0])
     prediction_test_list.append(prediction_test.cpu().detach().numpy()[0])
 print(y_test_list)
 print(prediction_test_list)
 print('test r2: ',r2_score(y_test_list, prediction_test_list))
+print('train r2: ',train_r2_list)
 # print(best_test_r2)
 quit()
 
