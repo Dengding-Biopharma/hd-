@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-data = pd.read_excel('20220516-41sample32feature.xlsx')
+data = pd.read_excel('20220518-126sample31feature.xlsx')
 print(data)
 
 df = pd.DataFrame()
@@ -32,4 +32,4 @@ df['Target'] = target_list
 df['Target_Volume'] = target_volumn_list
 print(df)
 
-df.to_csv('hd_41samples.csv',index=False)
+df.to_csv('hd_126samples.csv',index=False)

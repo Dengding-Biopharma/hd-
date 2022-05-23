@@ -5,3 +5,6 @@
 *.xlsx
 *.png
 *.tsv
+*.pt
+*.pyc
+*.csv

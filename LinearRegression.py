@@ -9,7 +9,7 @@ from sklearn.metrics import r2_score
 from sklearn.model_selection import KFold
 
 matplotlib.rc('font', family='Microsoft YaHei')
-data = pd.read_csv('hd_95samples.csv')
+data = pd.read_csv('hd_126samples.csv')
 
 print(data.columns.values)
 
@@ -124,7 +124,7 @@ print(df)
 plt.bar(df['selected features'], df['coefficient'])
 plt.xlabel('选中的feature')
 plt.ylabel('重要性(回归因数)')
-plt.title('95samples')
+plt.title('126samples')
 plt.show()
 quit()
 df.to_excel('hd回归模型_95samples_32feature.xlsx', index=False)
