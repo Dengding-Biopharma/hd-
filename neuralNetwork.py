@@ -57,7 +57,7 @@ if  __name__== '__main__':
     # for feature in data.columns.values[:-2]:
     #     if feature not in selected_features:
     #         del data[feature]
-    print(data)
+
     x_train = []
     for i in range(len(selected_features)):
         x_train.append(data[selected_features[i]].values)
@@ -67,6 +67,7 @@ if  __name__== '__main__':
     Y1 = np.array(data['Target_Volume'].values)
     Y2 = np.array(data['Target'].values)
     Y = np.vstack((Y1,Y2)).T
+
 
 
     # k-fold test
@@ -131,17 +132,14 @@ if  __name__== '__main__':
     # # print(best_test_r2)
     # quit()
 
-    x_train,x_test,y_train,y_test = train_test_split(X,Y,test_size=0.2,random_state=8)
 
-    # x_train = X[:110]
-    # y_train = Y[:110]
-    # x_test = X[110:]
-    # y_test = Y[110:]
+    # target1
+    x_train,x_test,y_train,y_test = train_test_split(X,Y1,test_size=0.2,random_state=8)
 
     x_train = torch.Tensor(x_train).to(device)
-    y_train = torch.Tensor(y_train).to(device)
+    y_train = torch.Tensor(y_train).view(y_train.shape[0],1).to(device)
     x_test = torch.Tensor(x_test).to(device)
-    y_test = torch.Tensor(y_test).to(device)
+    y_test = torch.Tensor(y_test).view(y_test.shape[0],1).to(device)
 
     in_dim = x_train.shape[1]
     out_dim = y_train.shape[1]
@@ -181,11 +179,67 @@ if  __name__== '__main__':
             test_r2 = r2_score(y_test.cpu().detach().numpy(), y_hat.cpu().detach().numpy())
             if test_r2 > best_r2:
                 best_r2 = test_r2
-                torch.save({'MLP':model.state_dict()},f'checkpoints/best_model.pt')
+                torch.save({'MLP':model.state_dict()},f'checkpoints/best_model_target1.pt')
             # y_hat = model(x_train)
             # print('train r2: ',r2_score(y_train.cpu().detach().numpy(), y_hat.cpu().detach().numpy()))
 
-    print('best test r2: ',best_r2)
+    print('best test r2 for target1: ',best_r2)
+
+
+
+
+    # target2
+    x_train, x_test, y_train, y_test = train_test_split(X, Y2, test_size=0.2, random_state=8)
+
+    x_train = torch.Tensor(x_train).to(device)
+    y_train = torch.Tensor(y_train).view(y_train.shape[0], 1).to(device)
+    x_test = torch.Tensor(x_test).to(device)
+    y_test = torch.Tensor(y_test).view(y_test.shape[0], 1).to(device)
+
+    in_dim = x_train.shape[1]
+    out_dim = y_train.shape[1]
+
+    model = MLP(in_dim=in_dim, out_dim=out_dim).to(device)
+    loss_fn = nn.MSELoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
+    best_r2 = -np.inf
+    epochs = 10000
+    with tqdm(range(epochs), unit='epoch', total=epochs, desc='Epoch iteration') as epoch:
+        for ep in epoch:
+            model.train()
+            batch_size = 100
+            step_num = len(x_train) // batch_size
+            with tqdm(range(step_num),
+                      unit=' samples',
+                      total=step_num,
+                      leave=True,
+                      desc='Sample Iteration') as tepoch:
+                for step in tepoch:
+                    try:
+                        x_batch = x_train[step * batch_size:(step * batch_size) + batch_size]
+                        y_batch = y_train[step * batch_size:(step * batch_size) + batch_size]
+                    except:
+                        x_batch = x_train[step * batch_size:]
+                        y_batch = y_train[step * batch_size:]
+                    output = model(x_batch)
+                    loss = loss_fn(output, y_batch)
+
+                    optimizer.zero_grad()
+                    loss.backward()
+                    optimizer.step()
+
+            model.eval()
+            y_hat = model(x_test)
+            test_r2 = r2_score(y_test.cpu().detach().numpy(), y_hat.cpu().detach().numpy())
+            if test_r2 > best_r2:
+                best_r2 = test_r2
+                torch.save({'MLP': model.state_dict()}, f'checkpoints/best_model_target2.pt')
+            # y_hat = model(x_train)
+            # print('train r2: ',r2_score(y_train.cpu().detach().numpy(), y_hat.cpu().detach().numpy()))
+
+    print('best test r2 for target2: ', best_r2)
+
+
 
 
 

@@ -19,6 +19,7 @@ X = []
 for i in range(len(features)):
     X.append(test_file[features[i]].values)
 
+
 X = np.array(X).T
 scaler = MinMaxScaler()
 X = scaler.fit_transform(X)
@@ -26,15 +27,21 @@ X = scaler.fit_transform(X)
 x = torch.Tensor(X).to(device)
 
 in_dim = x.shape[1]
-out_dim = 2
+out_dim = 1
 
-model = MLP(in_dim=in_dim, out_dim=out_dim).to(device)
-checkpoint = torch.load(f'checkpoints/best_model.pt', map_location=device)
-model.load_state_dict(checkpoint['MLP'])
+model1 = MLP(in_dim=in_dim, out_dim=out_dim).to(device)
+checkpoint = torch.load(f'checkpoints/best_model_target1.pt', map_location=device)
+model1.load_state_dict(checkpoint['MLP'])
 
-y_hat = model(x)
+model2 = MLP(in_dim=in_dim, out_dim=out_dim).to(device)
+checkpoint = torch.load(f'checkpoints/best_model_target2.pt', map_location=device)
+model2.load_state_dict(checkpoint['MLP'])
+
+y_hat1 = model1(x)
+y_hat2 = model2(x)
 # print(r2_score(y.cpu().detach().numpy(), y_hat.cpu().detach().numpy()))
-y_hat = y_hat.cpu().detach().numpy()
+y_hat1 = y_hat1.cpu().detach().numpy()
+y_hat2 = y_hat2.cpu().detach().numpy()
 print('target1    target2')
-for i in range(y_hat.shape[0]):
-    print(y_hat[i][0], y_hat[i][1])
+for i in range(y_hat1.shape[0]):
+    print(y_hat1[i][0], y_hat2[i][0])
