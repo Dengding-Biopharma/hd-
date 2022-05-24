@@ -64,7 +64,10 @@ if  __name__== '__main__':
 
     x_train = np.array(x_train).T
     X = scaler.fit_transform(x_train)
-    Y = np.array(data['Target'].values)
+    Y1 = np.array(data['Target_Volume'].values)
+    Y2 = np.array(data['Target'].values)
+    Y = np.vstack((Y1,Y2)).T
+
 
     # k-fold test
     # kf = KFold(n_splits=126,shuffle=True)
@@ -136,18 +139,18 @@ if  __name__== '__main__':
     # y_test = Y[110:]
 
     x_train = torch.Tensor(x_train).to(device)
-    y_train = torch.Tensor(y_train).view(y_train.shape[0],1).to(device)
+    y_train = torch.Tensor(y_train).to(device)
     x_test = torch.Tensor(x_test).to(device)
-    y_test = torch.Tensor(y_test).view(y_test.shape[0],1).to(device)
+    y_test = torch.Tensor(y_test).to(device)
 
     in_dim = x_train.shape[1]
     out_dim = y_train.shape[1]
 
     model = MLP(in_dim=in_dim,out_dim=out_dim).to(device)
     loss_fn = nn.MSELoss()
-    optimizer = torch.optim.Adam(model.parameters(),lr = 0.001)
+    optimizer = torch.optim.Adam(model.parameters(),lr = 0.0001)
     best_r2 = -np.inf
-    epochs = 2000
+    epochs = 10000
     with tqdm(range(epochs),unit= 'epoch',total=epochs,desc='Epoch iteration') as epoch:
         for ep in epoch:
             model.train()
