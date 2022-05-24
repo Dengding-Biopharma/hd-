@@ -131,10 +131,11 @@ if  __name__== '__main__':
     # print('train r2: ',train_r2_list)
     # # print(best_test_r2)
     # quit()
-
+    seed = torch.random.seed()
+    torch.cuda.manual_seed(seed)
 
     # target1
-    x_train,x_test,y_train,y_test = train_test_split(X,Y1,test_size=0.2,random_state=8)
+    x_train,x_test,y_train,y_test = train_test_split(X,Y1,test_size=0.2,random_state=seed)
 
     x_train = torch.Tensor(x_train).to(device)
     y_train = torch.Tensor(y_train).view(y_train.shape[0],1).to(device)
@@ -147,8 +148,9 @@ if  __name__== '__main__':
     model = MLP(in_dim=in_dim,out_dim=out_dim).to(device)
     loss_fn = nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(),lr = 0.0001)
-    best_r2 = -np.inf
-    epochs = 10000
+    best_r2_target1 = -np.inf
+    best_epoch_target1 = None
+    epochs = 30000
     with tqdm(range(epochs),unit= 'epoch',total=epochs,desc='Epoch iteration') as epoch:
         for ep in epoch:
             model.train()
@@ -177,19 +179,19 @@ if  __name__== '__main__':
             model.eval()
             y_hat = model(x_test)
             test_r2 = r2_score(y_test.cpu().detach().numpy(), y_hat.cpu().detach().numpy())
-            if test_r2 > best_r2:
-                best_r2 = test_r2
+            if test_r2 > best_r2_target1:
+                best_r2_target1 = test_r2
+                best_epoch_target1 = ep+1
                 torch.save({'MLP':model.state_dict()},f'checkpoints/best_model_target1.pt')
-            # y_hat = model(x_train)
-            # print('train r2: ',r2_score(y_train.cpu().detach().numpy(), y_hat.cpu().detach().numpy()))
 
-    print('best test r2 for target1: ',best_r2)
+
+
 
 
 
 
     # target2
-    x_train, x_test, y_train, y_test = train_test_split(X, Y2, test_size=0.2, random_state=8)
+    x_train, x_test, y_train, y_test = train_test_split(X, Y2, test_size=0.2, random_state=seed)
 
     x_train = torch.Tensor(x_train).to(device)
     y_train = torch.Tensor(y_train).view(y_train.shape[0], 1).to(device)
@@ -202,8 +204,9 @@ if  __name__== '__main__':
     model = MLP(in_dim=in_dim, out_dim=out_dim).to(device)
     loss_fn = nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
-    best_r2 = -np.inf
-    epochs = 10000
+    best_r2_target2 = -np.inf
+    best_epoch_target2 = None
+    epochs = 20000
     with tqdm(range(epochs), unit='epoch', total=epochs, desc='Epoch iteration') as epoch:
         for ep in epoch:
             model.train()
@@ -231,13 +234,17 @@ if  __name__== '__main__':
             model.eval()
             y_hat = model(x_test)
             test_r2 = r2_score(y_test.cpu().detach().numpy(), y_hat.cpu().detach().numpy())
-            if test_r2 > best_r2:
-                best_r2 = test_r2
+            if test_r2 > best_r2_target2:
+                best_r2_target2 = test_r2
+                best_epoch_target2 = ep+1
                 torch.save({'MLP': model.state_dict()}, f'checkpoints/best_model_target2.pt')
-            # y_hat = model(x_train)
-            # print('train r2: ',r2_score(y_train.cpu().detach().numpy(), y_hat.cpu().detach().numpy()))
 
-    print('best test r2 for target2: ', best_r2)
+
+    print('best test r2 for target1: ',best_r2_target1)
+    print('best epoch for target1: ',best_epoch_target1)
+    print('best test r2 for target2: ', best_r2_target2)
+    print('best epoch for target2: ',best_epoch_target2)
+    print('random seed: ',seed)
 
 
 
