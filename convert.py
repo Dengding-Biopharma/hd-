@@ -39,8 +39,6 @@ def convertPredictionFile(filename):
     df = pd.DataFrame()
 
     samples = []
-    target_volumn_list = []
-    target_list = []
 
     for label in data.columns.values[1:]:
         samples.append(data[label].values)
@@ -51,7 +49,7 @@ def convertPredictionFile(filename):
         column_label = data['Unnamed: 0'].values[i][7:]
         df[str(column_label)] = samples[:, i]
 
-    return df
+    return df,data.columns.values[1:]
 
 if  __name__== '__main__':
-    convertPredictionFile('20220518-126sample31feature_test.xlsx')
+    convertPredictionFile('files/20220518-126sample31feature_test.xlsx')
