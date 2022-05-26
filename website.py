@@ -5,7 +5,7 @@ from sklearn.preprocessing import MinMaxScaler
 
 from werkzeug.utils import secure_filename
 from convert import convertPredictionFile
-from neuralNetwork import MLP
+from neuralNetwork import MLP,findTrainFeatureMaxMin
 import numpy as np
 import torch
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -50,13 +50,18 @@ def file_uploader(output=''):
                 X.append(test_file[features[i]].values)
 
             X = np.array(X).T
-            scaler = MinMaxScaler()
-            X = scaler.fit_transform(X)
+
+            max, min = findTrainFeatureMaxMin()
+
+            X_std = (X - min) / (max - min)
+            X = X_std * (1 - 0) + 0
 
             x = torch.Tensor(X).to(device)
 
             in_dim = x.shape[1]
             out_dim = 1
+
+
 
             model1 = MLP(in_dim=in_dim, out_dim=out_dim).to(device)
             checkpoint = torch.load(f'checkpoints/best_model_target1.pt', map_location=device)
@@ -66,15 +71,13 @@ def file_uploader(output=''):
             checkpoint = torch.load(f'checkpoints/best_model_target2.pt', map_location=device)
             model2.load_state_dict(checkpoint['MLP'])
 
+            model1.eval()
+            model2.eval()
             y_hat1 = model1(x)
             y_hat2 = model2(x)
 
             y_hat1 = y_hat1.cpu().detach().numpy()
             y_hat2 = y_hat2.cpu().detach().numpy()
-
-            print('target1    target2')
-            for i in range(y_hat1.shape[0]):
-                print(y_hat1[i][0], y_hat2[i][0])
 
             for i in range(len(sample_name)):
                 output += '<tr class="table-info"><td>'

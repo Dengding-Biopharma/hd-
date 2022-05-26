@@ -1,3 +1,5 @@
+import random
+
 import matplotlib
 import numpy as np
 import pandas as pd
@@ -8,11 +10,11 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import r2_score
 from tqdm import tqdm
 from sklearn.model_selection import train_test_split
+from convert import convertTrainFile
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 from torch import nn
-from torch import optim
-from torchvision import datasets, transforms
+
 
 
 class MLP(nn.Module):
@@ -29,18 +31,33 @@ class MLP(nn.Module):
     def forward(self, x):
         out = self.module(x)
         return out
+
+def findTrainFeatureMaxMin():
+    data = convertTrainFile('files/20220518-126sample31feature.xlsx')
+
+    features = data.columns.values[:-2]
+
+    x_train = []
+    for i in range(len(features)):
+        x_train.append(data[features[i]].values)
+
+    x_train = np.array(x_train).T
+
+    return x_train.max(axis=0),x_train.min(axis=0)
+
 if  __name__== '__main__':
     matplotlib.rc('font', family='Microsoft YaHei')
-    data = pd.read_csv('hd_126samples.csv')
+    data = convertTrainFile('files/20220518-126sample31feature.xlsx')
 
     print(data.columns.values)
 
     features = data.columns.values[:-2]
     print(features)
+
     count = 0
     selected_features = []
     corrs = []
-    scaler = MinMaxScaler()
+
     for i in range(len(features)):
         x = data[features[i]].values
         y = data['Target'].values
@@ -63,7 +80,14 @@ if  __name__== '__main__':
         x_train.append(data[selected_features[i]].values)
 
     x_train = np.array(x_train).T
-    X = scaler.fit_transform(x_train)
+
+    # X = x_train
+
+    max,min = findTrainFeatureMaxMin()
+
+    X_std = (x_train - min) / (max - min)
+    X = X_std * (1 - 0) + 0
+
     Y1 = np.array(data['Target_Volume'].values)
     Y2 = np.array(data['Target'].values)
     Y = np.vstack((Y1,Y2)).T
@@ -131,16 +155,19 @@ if  __name__== '__main__':
     # print('train r2: ',train_r2_list)
     # # print(best_test_r2)
     # quit()
-    seed = torch.random.seed()
+    seed = random.randint(1,1000)
     torch.cuda.manual_seed(seed)
 
     # target1
-    x_train,x_test,y_train,y_test = train_test_split(X,Y1,test_size=0.2,random_state=seed)
+    x_train,x_test,y_train,y_test = train_test_split(X,Y1,test_size=0.35,random_state=seed)
 
     x_train = torch.Tensor(x_train).to(device)
     y_train = torch.Tensor(y_train).view(y_train.shape[0],1).to(device)
-    x_test = torch.Tensor(x_test).to(device)
-    y_test = torch.Tensor(y_test).view(y_test.shape[0],1).to(device)
+    x_dev = torch.Tensor(x_test[:20,:]).to(device)
+    y_dev = torch.Tensor(y_test[:20]).view(y_test[:20].shape[0],1).to(device)
+    x_test1 = torch.Tensor(x_test[20:, :]).to(device)
+    y_test1 = torch.Tensor(y_test[20:]).view(y_test[20:].shape[0], 1).to(device)
+
 
     in_dim = x_train.shape[1]
     out_dim = y_train.shape[1]
@@ -154,7 +181,7 @@ if  __name__== '__main__':
     with tqdm(range(epochs),unit= 'epoch',total=epochs,desc='Epoch iteration') as epoch:
         for ep in epoch:
             model.train()
-            batch_size = 100
+            batch_size = 81
             step_num = len(x_train) // batch_size
             with tqdm(range(step_num),
                       unit=' samples',
@@ -177,8 +204,8 @@ if  __name__== '__main__':
                     optimizer.step()
 
             model.eval()
-            y_hat = model(x_test)
-            test_r2 = r2_score(y_test.cpu().detach().numpy(), y_hat.cpu().detach().numpy())
+            y_hat = model(x_dev)
+            test_r2 = r2_score(y_dev.cpu().detach().numpy(), y_hat.cpu().detach().numpy())
             if test_r2 > best_r2_target1:
                 best_r2_target1 = test_r2
                 best_epoch_target1 = ep+1
@@ -191,12 +218,14 @@ if  __name__== '__main__':
 
 
     # target2
-    x_train, x_test, y_train, y_test = train_test_split(X, Y2, test_size=0.2, random_state=seed)
+    x_train, x_test, y_train, y_test = train_test_split(X, Y2, test_size=0.35, random_state=seed)
 
     x_train = torch.Tensor(x_train).to(device)
-    y_train = torch.Tensor(y_train).view(y_train.shape[0], 1).to(device)
-    x_test = torch.Tensor(x_test).to(device)
-    y_test = torch.Tensor(y_test).view(y_test.shape[0], 1).to(device)
+    y_train = torch.Tensor(y_train).view(y_train.shape[0],1).to(device)
+    x_dev = torch.Tensor(x_test[:20,:]).to(device)
+    y_dev = torch.Tensor(y_test[:20]).view(y_test[:20].shape[0],1).to(device)
+    x_test2 = torch.Tensor(x_test[20:, :]).to(device)
+    y_test2 = torch.Tensor(y_test[20:]).view(y_test[20:].shape[0], 1).to(device)
 
     in_dim = x_train.shape[1]
     out_dim = y_train.shape[1]
@@ -210,7 +239,7 @@ if  __name__== '__main__':
     with tqdm(range(epochs), unit='epoch', total=epochs, desc='Epoch iteration') as epoch:
         for ep in epoch:
             model.train()
-            batch_size = 100
+            batch_size = 81
             step_num = len(x_train) // batch_size
             with tqdm(range(step_num),
                       unit=' samples',
@@ -232,19 +261,35 @@ if  __name__== '__main__':
                     optimizer.step()
 
             model.eval()
-            y_hat = model(x_test)
-            test_r2 = r2_score(y_test.cpu().detach().numpy(), y_hat.cpu().detach().numpy())
+            y_hat = model(x_dev)
+            test_r2 = r2_score(y_dev.cpu().detach().numpy(), y_hat.cpu().detach().numpy())
             if test_r2 > best_r2_target2:
                 best_r2_target2 = test_r2
                 best_epoch_target2 = ep+1
                 torch.save({'MLP': model.state_dict()}, f'checkpoints/best_model_target2.pt')
 
 
-    print('best test r2 for target1: ',best_r2_target1)
+    print('best dev r2 for target1: ',best_r2_target1)
     print('best epoch for target1: ',best_epoch_target1)
-    print('best test r2 for target2: ', best_r2_target2)
+    print('best dev r2 for target2: ', best_r2_target2)
     print('best epoch for target2: ',best_epoch_target2)
     print('random seed: ',seed)
+
+    model1 = MLP(in_dim=in_dim, out_dim=out_dim).to(device)
+    checkpoint = torch.load(f'checkpoints/best_model_target1.pt', map_location=device)
+    model1.load_state_dict(checkpoint['MLP'])
+
+    model2 = MLP(in_dim=in_dim, out_dim=out_dim).to(device)
+    checkpoint = torch.load(f'checkpoints/best_model_target2.pt', map_location=device)
+    model2.load_state_dict(checkpoint['MLP'])
+
+    model1.eval()
+    model2.eval()
+    y_hat1 = model1(x_test1)
+    y_hat2 = model2(x_test2)
+
+    print('best test r2 for target1: ', r2_score(y_test1.cpu().detach().numpy(), y_hat1.cpu().detach().numpy()))
+    print('best test r2 for target2: ', r2_score(y_test2.cpu().detach().numpy(), y_hat2.cpu().detach().numpy()))
 
 
 
