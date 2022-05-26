@@ -14,6 +14,7 @@ from convert import convertTrainFile
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 from torch import nn
+import torch.nn.functional as f
 
 
 
@@ -24,12 +25,13 @@ class MLP(nn.Module):
         self.module = nn.Sequential(
             nn.Linear(in_dim,64),
             nn.ReLU(inplace=True),
-            nn.Linear(64, out_dim)
+            nn.Linear(64, out_dim),
         )
 
 
     def forward(self, x):
         out = self.module(x)
+        out = torch.sigmoid(out)
         return out
 
 def findTrainFeatureMaxMin():
@@ -156,6 +158,7 @@ if  __name__== '__main__':
     # # print(best_test_r2)
     # quit()
     seed = random.randint(1,1000)
+    # seed = 213
     torch.cuda.manual_seed(seed)
 
     # target1

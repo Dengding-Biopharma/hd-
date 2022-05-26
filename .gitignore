@@ -7,3 +7,5 @@
 *.tsv
 *.pyc
 *.csv
+*.zip
+.DS_Store

@@ -55,7 +55,6 @@ def file_uploader(output=''):
 
             X_std = (X - min) / (max - min)
             X = X_std * (1 - 0) + 0
-
             x = torch.Tensor(X).to(device)
 
             in_dim = x.shape[1]
