@@ -40,7 +40,7 @@ def file_uploader(output=''):
             filepath = 'tempFiles/'+secure_filename(f.filename)
             f.save(filepath)
 
-            output += '<div class="container"><table class="table"> <thead><tr><th>Sample</th><th>Target 1</th><th>Target 2</th></tr></thead><tbody>'
+            output += '<div class="container"><table class="table"> <thead><tr><th>Sample</th><th>Target 1</th><th>Target 2</th><th>Target 3</th><th>Target 4</th></tr></thead><tbody>'
 
             test_file,sample_name = convertPredictionFile(filepath)
             features = test_file.columns.values
@@ -58,33 +58,31 @@ def file_uploader(output=''):
             x = torch.Tensor(X).to(device)
 
             in_dim = x.shape[1]
-            out_dim = 1
+            out_dim = 4
 
 
 
-            model1 = MLP(in_dim=in_dim, out_dim=out_dim).to(device)
-            checkpoint = torch.load(f'checkpoints/best_model_target1.pt', map_location=device)
-            model1.load_state_dict(checkpoint['MLP'])
+            model = MLP(in_dim=in_dim, out_dim=out_dim).to(device)
+            checkpoint = torch.load(f'checkpoints/best_model.pt', map_location=device)
+            model.load_state_dict(checkpoint['MLP'])
 
-            model2 = MLP(in_dim=in_dim, out_dim=out_dim).to(device)
-            checkpoint = torch.load(f'checkpoints/best_model_target2.pt', map_location=device)
-            model2.load_state_dict(checkpoint['MLP'])
 
-            model1.eval()
-            model2.eval()
-            y_hat1 = model1(x)
-            y_hat2 = model2(x)
+            model.eval()
+            y_hat = model(x)
 
-            y_hat1 = y_hat1.cpu().detach().numpy()
-            y_hat2 = y_hat2.cpu().detach().numpy()
+            y_hat = y_hat.cpu().detach().numpy()
 
             for i in range(len(sample_name)):
                 output += '<tr class="table-info"><td>'
                 output += sample_name[i]
                 output += '</td><td>'
-                output += str(y_hat1[i][0])
+                output += str(y_hat[i][0])
                 output += '</td><td>'
-                output += str(y_hat2[i][0])
+                output += str(y_hat[i][1])
+                output += '</td><td>'
+                output += str(y_hat[i][2])
+                output += '</td><td>'
+                output += str(y_hat[i][3])
 
             os.remove(filepath) # delete cache
             return render_template('upload.html', result=output)

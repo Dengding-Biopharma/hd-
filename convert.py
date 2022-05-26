@@ -6,18 +6,24 @@ def convertTrainFile(filename):
 
     df = pd.DataFrame()
 
-    target_name = ['target1','target2']
-    target_index = [0,1]
+    target_name = ['target1','target2','target3','target4']
+    target_index = [0,1,2,3]
     samples = []
-    target_volumn_list = []
-    target_list = []
+    target_1_list = []
+    target_2_list = []
+    target_3_list = []
+    target_4_list = []
 
     for label in data.columns.values[1:]:
         temp = data[label]
-        target_volumn = temp[data['Unnamed: 0'] == target_name[0]]
-        target = temp[data['Unnamed: 0'] == target_name[1]]
-        target_list.append(float(target.values[0]))
-        target_volumn_list.append(float(target_volumn.values[0]))
+        target_1 = temp[data['Unnamed: 0'] == target_name[0]]
+        target_2 = temp[data['Unnamed: 0'] == target_name[1]]
+        target_3 = temp[data['Unnamed: 0'] == target_name[2]]
+        target_4 = temp[data['Unnamed: 0'] == target_name[3]]
+        target_1_list.append(float(target_1.values[0]))
+        target_2_list.append(float(target_2.values[0]))
+        target_3_list.append(float(target_3.values[0]))
+        target_4_list.append(float(target_4.values[0]))
         sample = temp
         samples.append(sample.values)
     samples = np.array(samples)
@@ -28,8 +34,10 @@ def convertTrainFile(filename):
         column_label = data['Unnamed: 0'].values[i][7:]
         df[str(column_label)] = samples[:,i]
 
-    df['Target'] = target_list
-    df['Target_Volume'] = target_volumn_list
+    df['Target1'] = target_1_list
+    df['Target2'] = target_2_list
+    df['Target3'] = target_3_list
+    df['Target4'] = target_4_list
 
     return df
 
