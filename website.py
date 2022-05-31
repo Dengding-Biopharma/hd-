@@ -50,8 +50,8 @@ def file_uploader(output=''):
                 X.append(test_file[features[i]].values)
 
             X = np.array(X).T
-
-            max, min = findTrainFeatureMaxMin()
+            filename = 'files/20220531-213sample14feature.xlsx'
+            max, min = findTrainFeatureMaxMin(filename)
 
             X_std = (X - min) / (max - min)
             X = X_std * (1 - 0) + 0
