@@ -48,6 +48,7 @@ def findTrainFeatureMaxMin(filename):
     return x_train.max(axis=0),x_train.min(axis=0)
 
 if  __name__== '__main__':
+    train = False
     matplotlib.rc('font', family='Microsoft YaHei')
     filename = 'files/20220531-213sample14feature.xlsx'
     data = convertTrainFile(filename)
@@ -160,50 +161,50 @@ if  __name__== '__main__':
     in_dim = x_train.shape[1]
     out_dim = y_train.shape[1]
     print(in_dim,out_dim)
+    if train:
+        model = MLP(in_dim=in_dim,out_dim=out_dim).to(device)
+        loss_fn = nn.MSELoss()
+        optimizer = torch.optim.Adam(model.parameters(),lr = 0.0001)
+        best_r2 = -np.inf
+        best_epoch = None
+        epochs = 30000
+        with tqdm(range(epochs),unit= 'epoch',total=epochs,desc='Epoch iteration') as epoch:
+            for ep in epoch:
+                model.train()
+                batch_size = 149
+                step_num = len(x_train) // batch_size
+                with tqdm(range(step_num),
+                          unit=' samples',
+                          total=step_num,
+                          leave=True,
+                          desc='Sample Iteration') as tepoch:
+                    for step in tepoch:
+                        try:
+                            x_batch = x_train[step * batch_size:(step * batch_size) + batch_size]
+                            y_batch = y_train[step * batch_size:(step * batch_size) + batch_size]
+                        except:
+                            x_batch = x_train[step * batch_size:]
+                            y_batch = y_train[step * batch_size:]
+                        output = model(x_batch)
+                        loss = loss_fn(output,y_batch)
 
-    model = MLP(in_dim=in_dim,out_dim=out_dim).to(device)
-    loss_fn = nn.MSELoss()
-    optimizer = torch.optim.Adam(model.parameters(),lr = 0.0001)
-    best_r2 = -np.inf
-    best_epoch = None
-    epochs = 30000
-    with tqdm(range(epochs),unit= 'epoch',total=epochs,desc='Epoch iteration') as epoch:
-        for ep in epoch:
-            model.train()
-            batch_size = 149
-            step_num = len(x_train) // batch_size
-            with tqdm(range(step_num),
-                      unit=' samples',
-                      total=step_num,
-                      leave=True,
-                      desc='Sample Iteration') as tepoch:
-                for step in tepoch:
-                    try:
-                        x_batch = x_train[step * batch_size:(step * batch_size) + batch_size]
-                        y_batch = y_train[step * batch_size:(step * batch_size) + batch_size]
-                    except:
-                        x_batch = x_train[step * batch_size:]
-                        y_batch = y_train[step * batch_size:]
-                    output = model(x_batch)
-                    loss = loss_fn(output,y_batch)
 
+                        optimizer.zero_grad()
+                        loss.backward()
+                        optimizer.step()
 
-                    optimizer.zero_grad()
-                    loss.backward()
-                    optimizer.step()
+                model.eval()
+                y_hat = model(x_dev)
+                test_r2 = r2_score(y_dev.cpu().detach().numpy(), y_hat.cpu().detach().numpy())
+                if test_r2 > best_r2:
+                    print(test_r2)
+                    best_r2 = test_r2
+                    best_epoch = ep+1
+                    torch.save({'MLP':model.state_dict()},f'checkpoints/best_model.pt')
 
-            model.eval()
-            y_hat = model(x_dev)
-            test_r2 = r2_score(y_dev.cpu().detach().numpy(), y_hat.cpu().detach().numpy())
-            if test_r2 > best_r2:
-                print(test_r2)
-                best_r2 = test_r2
-                best_epoch = ep+1
-                torch.save({'MLP':model.state_dict()},f'checkpoints/best_model.pt')
-
-    print('best dev r2 : ', best_r2)
-    print('best epoch for target1: ',best_epoch)
-    print('random seed: ', seed)
+        print('best dev r2 : ', best_r2)
+        print('best epoch',best_epoch)
+        print('random seed: ', seed)
 
     model = MLP(in_dim=in_dim, out_dim=out_dim).to(device)
     checkpoint = torch.load(f'checkpoints/best_model.pt', map_location=device)
